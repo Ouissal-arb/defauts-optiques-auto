@@ -1,0 +1,134 @@
+{
+  "winner_algo": "Random Forest",
+  "best_params": {
+    "n_estimators": 300,
+    "min_samples_leaf": 2,
+    "max_features": 0.8,
+    "max_depth": 10
+  },
+  "x_cols": [
+    "s39",
+    "s40",
+    "s41",
+    "v92",
+    "v93",
+    "v94",
+    "v95",
+    "v96",
+    "v97",
+    "v98",
+    "v99",
+    "oh53",
+    "oh54",
+    "oh55",
+    "oh56",
+    "oh57",
+    "v100",
+    "v101",
+    "v102",
+    "v103",
+    "v104",
+    "v105",
+    "v106",
+    "v107",
+    "oh58",
+    "oh59",
+    "oh60",
+    "oh61",
+    "oh62"
+  ],
+  "y_cols": [
+    "value_center_k1",
+    "value_center_k2",
+    "value_center_k3",
+    "value_center_k4",
+    "value_center_k5",
+    "value_center_k6",
+    "value_center_k7",
+    "value_center_k8",
+    "value_center_k9",
+    "value_center_k10",
+    "value_center_k11",
+    "value_center_k12"
+  ],
+  "outlier_y_max": 50,
+  "n_train_labelled": 5414,
+  "n_infer": 4413,
+  "benchmark": {
+    "Random Forest": {
+      "R2": 0.740166566668846,
+      "MAE": 0.8394994957498588
+    },
+    "Gradient Boosting": {
+      "R2": 0.7131423649120192,
+      "MAE": 0.9004144546813778
+    }
+  },
+  "results_per_target": [
+    {
+      "cible": "value_center_k1",
+      "R2": 0.6386462554980623,
+      "MAE": 0.8027833896921547
+    },
+    {
+      "cible": "value_center_k2",
+      "R2": 0.7342026660674519,
+      "MAE": 0.7039194314947445
+    },
+    {
+      "cible": "value_center_k3",
+      "R2": 0.8160970405317627,
+      "MAE": 0.7820994291518517
+    },
+    {
+      "cible": "value_center_k4",
+      "R2": 0.7410222583281427,
+      "MAE": 0.9268623144685021
+    },
+    {
+      "cible": "value_center_k5",
+      "R2": 0.7338753595030212,
+      "MAE": 0.8287389151868836
+    },
+    {
+      "cible": "value_center_k6",
+      "R2": 0.737033210750726,
+      "MAE": 0.9094600438382829
+    },
+    {
+      "cible": "value_center_k7",
+      "R2": 0.7613216515036367,
+      "MAE": 0.9840375086609836
+    },
+    {
+      "cible": "value_center_k8",
+      "R2": 0.7045153913471933,
+      "MAE": 0.994522428864731
+    },
+    {
+      "cible": "value_center_k9",
+      "R2": 0.6481892760922823,
+      "MAE": 0.7371198327479208
+    },
+    {
+      "cible": "value_center_k10",
+      "R2": 0.7854277244342409,
+      "MAE": 0.7504455713393049
+    },
+    {
+      "cible": "value_center_k11",
+      "R2": 0.7905190186431288,
+      "MAE": 0.8057620050042223
+    },
+    {
+      "cible": "value_center_k12",
+      "R2": 0.7516190057590317,
+      "MAE": 0.945259936941862
+    },
+    {
+      "cible": "GLOBAL (moyenne)",
+      "R2": 0.7368724048715568,
+      "MAE": 0.847584233949287
+    }
+  ]
+}
