@@ -52,6 +52,7 @@
     "value_center_k12"
   ],
   "outlier_y_max": 50,
+  "tolerance": 11.56,
   "n_train_labelled": 5414,
   "n_infer": 4413,
   "benchmark": {

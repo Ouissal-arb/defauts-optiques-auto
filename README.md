@@ -4,10 +4,36 @@
 - `pipeline3_finale.ipynb` — le pipeline complet (EDA -> pretraitement ->
   split 80/20 -> benchmark RF vs Gradient Boosting -> optimisation ->
   export des predictions), conforme a la feuille de route de l'encadrant.
-- `app.py` — interface Streamlit qui presente le projet (elle ne reentraine
-  rien : elle lit les resultats sauvegardes par le notebook).
+- `app.py` — interface Streamlit qui presente le projet. Elle ne reentraine
+  rien pour les pages de reporting (elle lit les resultats sauvegardes par
+  le notebook), mais l'onglet **"Tester une piece"** appelle directement les
+  modeles sauvegardes (`artifacts/models.joblib`) pour predire en direct la
+  conformite d'une piece saisie manuellement.
 - `.streamlit/config.toml` — theme visuel de l'application.
 - `requirements.txt` — dependances Python.
+
+## Onglet interactif "Tester une piece"
+
+Cet onglet permet de saisir les 29 mesures de deformation d'une piece (ou
+de partir d'un exemple du jeu de test aveugle / des valeurs medianes) et
+d'obtenir instantanement :
+- la distorsion optique predite aux 12 points de mesure (k1 a k12) ;
+- un verdict **Conforme / Defaut** obtenu en comparant chaque point a une
+  **tolerance de conformite** (curseur ajustable dans l'interface).
+
+La tolerance par defaut (`metadata["tolerance"]`) est calculee comme la
+mediane de `|distorsion|` observee sur les donnees d'entrainement — c'est
+un **place-holder statistique**, pas une vraie specification qualite.
+**A remplacer par la tolerance metier reelle** (cahier des charges /
+maitre de stage) des qu'elle est connue, dans `pipeline3_finale.ipynb`
+(section 8, variable `TOLERANCE`) ou directement via le curseur de l'appli.
+
+Cet onglet a besoin des fichiers `artifacts/models.joblib`,
+`artifacts/imputer.joblib` et `artifacts/scaler.joblib`. Ces fichiers sont
+suivis par **Git LFS** (`*.joblib` dans `.gitattributes`) : assurez-vous de
+faire `git lfs pull` (ou d'installer Git LFS avant le clone) pour recuperer
+les vrais binaires plutot que de simples pointeurs texte — sinon l'appli
+affiche un message d'erreur explicite dans cet onglet.
 
 ## Comment executer
 

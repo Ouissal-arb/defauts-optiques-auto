@@ -71,7 +71,14 @@ def load_infer_X():
 @st.cache_resource
 def load_models():
     path = ARTIFACTS_DIR / "models.joblib"
-    return joblib.load(path) if path.exists() else None
+    if not path.exists():
+        return None
+    try:
+        return joblib.load(path)
+    except Exception:
+        # Le plus souvent : fichier suivi par Git LFS laisse sous forme de
+        # pointeur texte (pas telecharge) plutot que le vrai binaire.
+        return None
 
 
 @st.cache_resource
@@ -80,7 +87,10 @@ def load_preprocessing():
     scaler_path = ARTIFACTS_DIR / "scaler.joblib"
     if not (imputer_path.exists() and scaler_path.exists()):
         return None, None
-    return joblib.load(imputer_path), joblib.load(scaler_path)
+    try:
+        return joblib.load(imputer_path), joblib.load(scaler_path)
+    except Exception:
+        return None, None
 
 
 metadata = load_metadata()
@@ -96,6 +106,7 @@ page = st.sidebar.radio(
         "Benchmark des modeles",
         "Resultats & performance",
         "Predictions",
+        "Tester une piece",
     ],
 )
 
@@ -296,3 +307,138 @@ elif page == "Predictions":
         if infer_X is not None:
             with st.expander("Voir les mesures de deformation en entree pour cette piece"):
                 st.dataframe(infer_X.iloc[[int(idx)]].T.rename(columns={int(idx): "valeur"}))
+
+# =====================================================================
+elif page == "Tester une piece":
+    st.title("🧪 Diagnostic d'une piece — saisie manuelle")
+    st.markdown(
+        """
+        Saisissez les **29 mesures de deformation physique** d'une piece (ou
+        chargez un exemple existant), puis lancez la prediction : le modele
+        estime la distorsion optique aux 12 points de mesure et l'appli rend
+        un verdict **Conforme / Defaut** en comparant chaque point a une
+        tolerance de conformite.
+        """
+    )
+
+    models = load_models()
+    imputer, scaler = load_preprocessing()
+    infer_X = load_infer_X()
+
+    if models is None or imputer is None or scaler is None:
+        st.error(
+            "Artefacts de modele introuvables ou illisibles "
+            "(`models.joblib`, `imputer.joblib`, `scaler.joblib`).\n\n"
+            "Si ces fichiers sont suivis par **Git LFS**, verifiez qu'ils ont "
+            "bien ete telecharges (`git lfs pull`) et pas laisses sous forme "
+            "de simple pointeur texte."
+        )
+        st.stop()
+
+    default_tolerance = float(metadata.get("tolerance", 2.0))
+
+    st.markdown("#### 1. Pre-remplir les mesures")
+    preset = st.radio(
+        "Point de depart",
+        ["Valeurs medianes (reference)", "Exemple du jeu de test aveugle"],
+        horizontal=True,
+    )
+
+    if preset == "Exemple du jeu de test aveugle" and infer_X is not None:
+        col_a, col_b = st.columns([3, 1])
+        with col_b:
+            if st.button("🎲 Tirer un exemple au hasard"):
+                st.session_state["piece_idx"] = int(np.random.randint(len(infer_X)))
+        with col_a:
+            idx = st.number_input(
+                "Indice de la piece",
+                min_value=0,
+                max_value=len(infer_X) - 1,
+                value=int(st.session_state.get("piece_idx", 0)),
+                step=1,
+                key="piece_idx",
+            )
+        preset_values = infer_X.iloc[int(idx)].to_dict()
+        st.caption(f"Mesures pre-remplies depuis la piece #{int(idx)} du jeu de test aveugle.")
+    elif infer_X is not None:
+        preset_values = infer_X.median().to_dict()
+    else:
+        preset_values = {c: 0.0 for c in X_COLS}
+
+    st.markdown("#### 2. Verifier / ajuster les mesures et predire")
+    groups = {
+        "Capteurs de surface (s)": [c for c in X_COLS if c.startswith("s")],
+        "Mesures v": [c for c in X_COLS if c.startswith("v")],
+        "Mesures oh": [c for c in X_COLS if c.startswith("oh")],
+    }
+
+    input_values = {}
+    with st.form("piece_form"):
+        for group_name, cols in groups.items():
+            st.markdown(f"**{group_name}**")
+            n_per_row = 4
+            for i in range(0, len(cols), n_per_row):
+                row_cols = cols[i : i + n_per_row]
+                widget_cols = st.columns(len(row_cols))
+                for wc, feat in zip(widget_cols, row_cols):
+                    default_val = float(preset_values.get(feat, 0.0))
+                    input_values[feat] = wc.number_input(
+                        feat,
+                        value=round(default_val, 4),
+                        format="%.4f",
+                        key=f"feat_{feat}_{preset}",
+                    )
+
+        tolerance = st.slider(
+            "Tolerance de conformite (|distorsion| max acceptee par point)",
+            min_value=0.5,
+            max_value=25.0,
+            value=round(default_tolerance, 1),
+            step=0.5,
+            help="Valeur par defaut = mediane de |distorsion| observee sur les "
+            "donnees d'entrainement (voir metadata.json). A remplacer par la "
+            "vraie tolerance metier du cahier des charges des qu'elle est connue.",
+        )
+
+        submitted = st.form_submit_button("🔍 Predire la conformite")
+
+    if submitted:
+        x_row = pd.DataFrame([input_values])[X_COLS]
+        x_imputed = imputer.transform(x_row)
+        x_scaled = scaler.transform(x_imputed)
+
+        preds = {col: float(models[col].predict(x_scaled)[0]) for col in Y_COLS}
+        pred_series = pd.Series(preds)[Y_COLS]
+        conforme_mask = pred_series.abs() <= tolerance
+        n_defauts = int((~conforme_mask).sum())
+
+        st.markdown("#### 3. Verdict")
+        if n_defauts == 0:
+            st.success(
+                f"✅ **PIECE CONFORME** — les {len(Y_COLS)} points respectent "
+                f"la tolerance de {tolerance:.2f}."
+            )
+        else:
+            bad_points = ", ".join(
+                p.replace("value_center_", "") for p in pred_series.index[~conforme_mask]
+            )
+            st.error(
+                f"❌ **DEFAUT DETECTE** — {n_defauts} point(s) hors tolerance "
+                f"({tolerance:.2f}) : {bad_points}"
+            )
+
+        fig, ax = plt.subplots(figsize=(9, 3.5))
+        colors = ["#1F7A72" if ok else "#C9524A" for ok in conforme_mask]
+        ax.bar(Y_COLS, pred_series.values, color=colors)
+        ax.axhline(0, color="black", linewidth=0.8)
+        ax.axhline(tolerance, color="gray", linestyle="--", linewidth=0.8)
+        ax.axhline(-tolerance, color="gray", linestyle="--", linewidth=0.8)
+        ax.set_ylabel("Distorsion optique predite")
+        ax.set_title("Distorsion predite par point (pointilles = tolerance)")
+        ax.tick_params(axis="x", rotation=45)
+        plt.tight_layout()
+        st.pyplot(fig, width='stretch')
+
+        result_table = pred_series.rename("Distorsion predite").to_frame()
+        result_table["Statut"] = np.where(conforme_mask, "Conforme", "Defaut")
+        st.dataframe(result_table.round(4), width='stretch')
