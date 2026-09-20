@@ -56,15 +56,26 @@
    - entrainer et comparer Random Forest, Extra Trees, Gradient Boosting,
      HistGradientBoosting, XGBoost et LightGBM (parametres par defaut,
      un modele independant par cible) ;
-   - optimiser les hyperparametres de Random Forest (RandomizedSearch) ;
-   - retenir un **Random Forest multi-output** comme modele final (un seul
-     modele pour les 12 cibles, avec les hyperparametres optimises) — ce
-     choix est documente par le tableau comparatif, meme s'il n'est pas
-     toujours celui qui a le R2 independant le plus eleve ;
+   - **regulariser Random Forest multi-output par validation croisee 5-fold** :
+     recherche sur `max_depth` (reduit), `min_samples_leaf` / `min_samples_split`
+     (augmentes), `max_features` (limite) et `n_estimators`, en comparant
+     explicitement R2 train vs R2 validation pour chaque combinaison (et vs
+     la configuration par defaut, qui memorise parfaitement le train —
+     R2=1.0 — signe de sur-apprentissage) ;
+   - retenir ce **Random Forest multi-output regularise** comme modele final
+     (un seul modele pour les 12 cibles) — ce choix est documente par le
+     tableau comparatif de la section 4, meme s'il n'est pas toujours celui
+     qui a le R2 independant le plus eleve ;
    - exporter `predictions_Y_v3.csv` (predictions sur le jeu de test aveugle,
      dans l'ordre original des lignes) ;
    - sauvegarder un dossier `artifacts/` (modele unique, scaler, imputer,
      metriques, `best_pipeline.joblib`, tableau comparatif complet).
+
+   ⚠️ Cette recherche d'hyperparametres (section 5) est plus longue qu'avant
+   (validation croisee 5-fold x 15 combinaisons + la reference = 80
+   entrainements) : comptez plus de temps que lors d'un run precedent,
+   surtout sur le vrai jeu de donnees (~5000+ lignes). Reduisez `N_ITER`
+   dans la section 5 si besoin.
 
 4. **Lancer l'interface Streamlit** (depuis le meme dossier, une fois
    `artifacts/` genere) :
