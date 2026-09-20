@@ -10,10 +10,28 @@
   fois) — un choix de conception (un seul modele a deployer, correlations
   entre points prises en compte), documente par le benchmark complet des
   7 approches meme si une autre n'est pas toujours premiere au R2.
-- `app.py` — interface Streamlit qui presente le projet (elle ne reentraine
-  rien : elle lit les resultats sauvegardes par le notebook).
+- `app.py` — interface Streamlit en 7 pages (elle ne reentraine rien : elle
+  lit les artefacts sauvegardes par le notebook) :
+  - 🏠 **Dashboard** — KPIs de production (pieces testees, taux de
+    conformite, distorsion moyenne/max), repartition conforme/non conforme,
+    evolution du taux de conformite dans le temps.
+  - 🔍 **Tester des pieces** — importer un CSV de nouvelles pieces
+    (`id` + les 29 X), prediction des 12 Y, classement conforme/non
+    conforme selon une tolerance ajustable, detail piece par piece,
+    enregistrement dans l'historique et export CSV des resultats.
+  - 📋 **Historique** — recherche, filtre (conforme/non conforme), tri
+    (date, distorsion), detail d'un controle passe, export CSV.
+  - 📊 Exploration des donnees, 🤖 Benchmark des modeles, 📈 Resultats &
+    performance, 📁 Predictions (jeu aveugle) — les pages du projet ML
+    d'origine, conservees telles quelles.
 - `.streamlit/config.toml` — theme visuel de l'application.
 - `requirements.txt` — dependances Python.
+- `data/historique.db` — base **SQLite** (creee automatiquement au premier
+  controle enregistre) qui stocke l'historique des controles. Un simple
+  fichier local suffit pour ce volume de donnees (pas de serveur a
+  installer) tout en permettant une vraie recherche/filtre/tri en SQL ;
+  ce dossier n'est pas versionne (voir `.gitignore`), chaque poste a son
+  propre historique local.
 
 ## Comment executer
 
@@ -91,3 +109,7 @@
 - `N_ITER` (section 5, recherche d'hyperparametres) : nombre de combinaisons
   testees. 15 est un bon compromis qualite/temps de calcul ; augmentez-le si
   votre machine le permet.
+- **Tolerance de conformite** (page "Tester des pieces" de `app.py`) : la
+  valeur par defaut (1.0) est **fictive**, a remplacer par la vraie
+  tolerance industrielle une fois validee avec l'encadrant. Elle est
+  ajustable directement dans l'interface (pas besoin de modifier le code).
