@@ -4,8 +4,12 @@
 - `pipeline3_finale.ipynb` — le pipeline complet (EDA -> pretraitement ->
   split 80/20 -> comparaison de 6 familles de modeles [Random Forest,
   Extra Trees, Gradient Boosting, HistGradientBoosting, XGBoost, LightGBM]
-  -> optimisation de Random Forest -> independant vs multi-output ->
-  export des predictions), conforme a la feuille de route de l'encadrant.
+  -> optimisation de Random Forest -> export des predictions), conforme a
+  la feuille de route de l'encadrant. **Modele final retenu : Random
+  Forest multi-output** (un seul modele qui predit les 12 cibles a la
+  fois) — un choix de conception (un seul modele a deployer, correlations
+  entre points prises en compte), documente par le benchmark complet des
+  7 approches meme si une autre n'est pas toujours premiere au R2.
 - `app.py` — interface Streamlit qui presente le projet (elle ne reentraine
   rien : elle lit les resultats sauvegardes par le notebook).
 - `.streamlit/config.toml` — theme visuel de l'application.
@@ -50,16 +54,17 @@
 3. **Executer le notebook du debut a la fin.** Il va :
    - afficher l'EDA (valeurs manquantes, valeurs aberrantes) ;
    - entrainer et comparer Random Forest, Extra Trees, Gradient Boosting,
-     HistGradientBoosting, XGBoost et LightGBM (parametres par defaut) ;
+     HistGradientBoosting, XGBoost et LightGBM (parametres par defaut,
+     un modele independant par cible) ;
    - optimiser les hyperparametres de Random Forest (RandomizedSearch) ;
-   - comparer approche independante (1 modele par cible) et multi-output
-     (1 seul modele pour les 12 cibles) ;
-   - choisir le modele final sur la base du **R2 moyen** (metrique
-     principale), en gardant MAE et RMSE comme indicateurs complementaires ;
+   - retenir un **Random Forest multi-output** comme modele final (un seul
+     modele pour les 12 cibles, avec les hyperparametres optimises) — ce
+     choix est documente par le tableau comparatif, meme s'il n'est pas
+     toujours celui qui a le R2 independant le plus eleve ;
    - exporter `predictions_Y_v3.csv` (predictions sur le jeu de test aveugle,
      dans l'ordre original des lignes) ;
-   - sauvegarder un dossier `artifacts/` (modeles, scaler, imputer, metriques,
-     `best_pipeline.joblib`, tableau comparatif complet).
+   - sauvegarder un dossier `artifacts/` (modele unique, scaler, imputer,
+     metriques, `best_pipeline.joblib`, tableau comparatif complet).
 
 4. **Lancer l'interface Streamlit** (depuis le meme dossier, une fois
    `artifacts/` genere) :
