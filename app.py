@@ -199,31 +199,44 @@ elif page == "Exploration des donnees":
 
 # =====================================================================
 elif page == "Benchmark des modeles":
-    st.title("Benchmark : Random Forest vs Gradient Boosting")
+    st.title("Comparaison des modeles")
     st.markdown(
-        "Les deux algorithmes sont entraines et evalues **sur le meme split** "
+        "Chaque famille de modele est entrainee et evaluee **sur le meme split** "
         "80/20 pour une comparaison equitable, avec un modele independant par "
-        "point (k1 a k12)."
+        "point (k1 a k12). Le modele retenu maximise le **R2 moyen** (metrique "
+        "principale) ; MAE et RMSE sont des indicateurs complementaires."
     )
 
-    bench = pd.DataFrame(metadata["benchmark"]).T
+    if "model_comparison" in metadata:
+        comparison = pd.DataFrame(metadata["model_comparison"]).set_index("modele")
+    else:
+        # compatibilite avec un ancien metadata.json (benchmark RF vs GB uniquement)
+        comparison = pd.DataFrame(metadata["benchmark"]).T.rename(
+            columns={"R2": "R2_moyen", "MAE": "MAE_moyen"}
+        )
+    comparison = comparison.sort_values("R2_moyen", ascending=False)
+    winner = metadata["winner_algo"]
+
     col1, col2 = st.columns([1, 2])
     with col1:
-        st.dataframe(bench.round(4), width='stretch')
-        winner = metadata["winner_algo"]
-        st.success(f"Modele retenu pour l'optimisation : **{winner}**")
+        cols_to_show = [c for c in ["R2_moyen", "MAE_moyen", "RMSE_moyen", "temps_entrainement_s"] if c in comparison.columns]
+        st.dataframe(comparison[cols_to_show].round(4), width='stretch')
+        st.success(f"Modele retenu : **{winner}**")
 
     with col2:
-        fig, ax = plt.subplots(figsize=(6, 3.5))
-        ax.bar(bench.index, bench["R2"], color=["#1F7A72", "#C97B4A"])
-        ax.set_ylabel("R2 global (moyenne des 12 cibles, validation)")
-        ax.axhline(0, color="black", linewidth=0.8)
-        for i, v in enumerate(bench["R2"]):
-            ax.text(i, v, f"{v:.3f}", ha="center", va="bottom" if v >= 0 else "top")
+        fig, ax = plt.subplots(figsize=(7, 4))
+        colors = ["#1F7A72" if name == winner else "#C97B4A" for name in comparison.index]
+        ax.barh(comparison.index, comparison["R2_moyen"], color=colors)
+        ax.set_xlabel("R2 moyen (validation, moyenne des 12 cibles)")
+        ax.axvline(0, color="black", linewidth=0.8)
+        for i, v in enumerate(comparison["R2_moyen"]):
+            ax.text(v, i, f" {v:.3f}", va="center")
+        ax.invert_yaxis()
         st.pyplot(fig, width='stretch')
 
-    st.markdown("#### Hyperparametres retenus apres optimisation")
-    st.json(metadata["best_params"])
+    st.markdown("#### Hyperparametres retenus (modele final)")
+    st.json(metadata["best_params"] if metadata.get("best_params") else
+            {"info": "parametres par defaut (pas d'optimisation dediee a ce modele)"})
 
 # =====================================================================
 elif page == "Resultats & performance":
